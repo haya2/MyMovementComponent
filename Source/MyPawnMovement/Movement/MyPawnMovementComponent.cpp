@@ -7,6 +7,10 @@
 
 UMyPawnMovementComponent::UMyPawnMovementComponent(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
+	,ForwardNowSpeed(0.0f)
+	,RightNowSpeed(0.0f)
+	,UpNowSpeed(0.0f)
+	,IsFalling(false)
 {
 }
 
@@ -24,9 +28,11 @@ void UMyPawnMovementComponent::Jump()
 {
 	//ジャンプした時の初速度
 	//説明の関係で定数にしていますが、この手の値は調整される値になるハズなので外部設定できるようにします。
-	const float JUMP_INIT_SPEED = 236.0f;
+	const float INIT_JUMP_SPEED = 930.0f;
 
-	UpNowSpeed = JUMP_INIT_SPEED;
+	UpNowSpeed = INIT_JUMP_SPEED;
+
+	IsFalling = true;
 }
 
 void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -89,8 +95,23 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 	}
 
 	//Update Gravity
+	if (IsFalling)
 	{
-		UpNowSpeed -= GetGravityZ() * DeltaTime;
+		//落下中の最高速度
+		//説明の関係で定数にしていますが、この手の値は調整される値になるハズなので外部設定できるようにします。
+		const float MAX_FALL_SPEED = 5000.0f;
+		const float GRAVITY_SCALE = 2.0f;
+
+		UpNowSpeed += GetGravityZ() * GRAVITY_SCALE * DeltaTime;
+		UpNowSpeed = FMath::Clamp(UpNowSpeed, -MAX_FALL_SPEED, MAX_FALL_SPEED);
+
+		{
+			const auto rotation = UpdatedComponent->GetComponentRotation();
+
+			const auto upVector = UKismetMathLibrary::GetUpVector(rotation);
+
+			Velocity += (upVector * UpNowSpeed);
+		}
 	}
 
 	//Update Movement
@@ -98,7 +119,26 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		FVector moveVec = Velocity * DeltaTime;
 		if (!moveVec.IsNearlyZero())
 		{
-			MoveUpdatedComponent(moveVec, UpdatedComponent->GetComponentQuat(), true);
+			FHitResult hitResult;
+			MoveUpdatedComponent(moveVec, UpdatedComponent->GetComponentRotation(), true, &hitResult);
+
+			if (hitResult.bBlockingHit)
+			{
+				//落下中の着地判定
+				if (IsFalling)
+				{
+					const auto hitComponent = hitResult.GetComponent();
+					if (hitComponent)
+					{
+						if (hitComponent->CanCharacterStepUp(nullptr))
+						{
+							IsFalling = false;
+
+							UpNowSpeed = 0.0f;
+						}
+					}
+				}
+			}
 		}
 
 		UpdateComponentVelocity();

@@ -41,4 +41,7 @@ private:
 	float	RightNowSpeed;
 	//現在の移動速度。上下
 	float	UpNowSpeed;
+
+	//落下しているかどうか
+	bool	IsFalling;
 };
