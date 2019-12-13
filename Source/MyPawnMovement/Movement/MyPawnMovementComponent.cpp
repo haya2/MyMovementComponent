@@ -120,7 +120,7 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 		if (!moveVec.IsNearlyZero())
 		{
 			FHitResult hitResult;
-			MoveUpdatedComponent(moveVec, UpdatedComponent->GetComponentRotation(), true, &hitResult);
+			MoveUpdatedComponent(moveVec, UpdatedComponent->GetComponentQuat(), true, &hitResult);
 
 			if (hitResult.bBlockingHit)
 			{
@@ -142,6 +142,39 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 						}
 					}
 				}
+			}
+			else
+			{
+//TODO：なんか考える
+#if 0
+				//移動中の落下判定
+				if (!IsFalling)
+				{
+					FHitResult hitFall;
+					//CheckHitFloor(hitFall);
+					if (hitFall.bBlockingHit)
+					{
+						//
+						const float FALL_STEP_HEIGHT = 20.0f;
+						if (FALL_STEP_HEIGHT < hitFall.Distance)
+						{
+							IsFalling = true;
+						}
+						//傾斜を下る移動処理。上る移動はSlideAlongSurface関数の処理で行われます。
+						else
+						{
+							//登る処理はSlideAlongSurface関数で行っているので、を下記で行う。
+							FVector moveVecFall = hitFall.ImpactPoint - UpdatedComponent->GetComponentLocation();
+
+							MoveUpdatedComponent(moveVecFall, UpdatedComponent->GetComponentQuat(), true);
+						}
+					}
+					else
+					{
+						IsFalling = true;
+					}
+				}
+#endif
 			}
 		}
 
