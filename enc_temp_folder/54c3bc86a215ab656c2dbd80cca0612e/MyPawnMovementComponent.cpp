@@ -124,7 +124,7 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 
 			if (hitResult.bBlockingHit)
 			{
-				//壁などにヒットした場合に停止せずにスライドさせる処理
+				//
 				FHitResult hitSlide = hitResult;
 				SlideAlongSurface(moveVec, 1.0f - hitResult.Time, hitResult.Normal, hitSlide, true);
 
