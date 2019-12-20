@@ -3,7 +3,10 @@
 
 #include "MyPawnMovementComponent.h"
 
+#include "Components/CapsuleComponent.h"
+
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 UMyPawnMovementComponent::UMyPawnMovementComponent(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -145,16 +148,41 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 			}
 			else
 			{
-//TODO：なんか考える
-#if 0
 				//移動中の落下判定
 				if (!IsFalling)
 				{
 					FHitResult hitFall;
-					//CheckHitFloor(hitFall);
+
+					//下向きにトレースして、床面に接触していないなら落下させる。
+					{
+						const auto capsule = Cast<UCapsuleComponent>(UpdatedComponent);
+						if (capsule)
+						{
+							const auto radius = capsule->GetScaledCapsuleRadius();
+							const auto halfHeight = capsule->GetScaledCapsuleHalfHeight();
+
+							const auto rotation = UpdatedComponent->GetComponentRotation();
+							const auto upVector = UKismetMathLibrary::GetUpVector(rotation);
+
+							FVector traceStartPos = UpdatedComponent->GetComponentLocation();
+							FVector traceEndPos = traceStartPos - (upVector * halfHeight);
+
+							TArray<TEnumAsByte<EObjectTypeQuery>> traceObjectTypeArray;
+							traceObjectTypeArray.Add(EObjectTypeQuery::ObjectTypeQuery1);//WorldStatic
+							traceObjectTypeArray.Add(EObjectTypeQuery::ObjectTypeQuery2);//WorldDynamic
+
+							TArray<AActor*>	traceIgnoreActorArray;
+
+							UKismetSystemLibrary::CapsuleTraceSingleForObjects(this, traceStartPos, traceEndPos, radius, halfHeight, 
+								traceObjectTypeArray, false, traceIgnoreActorArray, EDrawDebugTrace::None, hitFall, true);
+						}
+					}
+
+					//傾斜を下る移動処理
 					if (hitFall.bBlockingHit)
 					{
-						//
+						//傾斜ではなく落下する段差として認識する高さ。
+						//説明の関係で定数にしていますが、この手の値は調整される値になるハズなので外部設定できるようにします。
 						const float FALL_STEP_HEIGHT = 20.0f;
 						if (FALL_STEP_HEIGHT < hitFall.Distance)
 						{
@@ -174,7 +202,6 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 						IsFalling = true;
 					}
 				}
-#endif
 			}
 		}
 
