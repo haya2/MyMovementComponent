@@ -178,28 +178,28 @@ void UMyPawnMovementComponent::TickComponent(float DeltaTime, enum ELevelTick Ti
 						}
 					}
 
-					//傾斜を下る移動処理
-					if (hitFall.bBlockingHit)
+					//床に接触していないので落下する
+					if (!hitFall.bBlockingHit)
+					{
+						IsFalling = true;
+					}
+					else
 					{
 						//傾斜ではなく落下する段差として認識する高さ。
 						//説明の関係で定数にしていますが、この手の値は調整される値になるハズなので外部設定できるようにします。
 						const float FALL_STEP_HEIGHT = 20.0f;
+
+						//段差からは落下させる
 						if (FALL_STEP_HEIGHT < hitFall.Distance)
 						{
 							IsFalling = true;
 						}
-						//傾斜を下る移動処理。上る移動はSlideAlongSurface関数の処理で行われます。
+						//傾斜を降る移動処理。登る移動処理はSlideAlongSurface関数の処理で行われます。
 						else
 						{
-							//登る処理はSlideAlongSurface関数で行っているので、を下記で行う。
 							FVector moveVecFall = hitFall.ImpactPoint - UpdatedComponent->GetComponentLocation();
-
 							MoveUpdatedComponent(moveVecFall, UpdatedComponent->GetComponentQuat(), true);
 						}
-					}
-					else
-					{
-						IsFalling = true;
 					}
 				}
 			}
